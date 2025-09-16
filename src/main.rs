@@ -5,10 +5,14 @@ use clap::Parser;
 
 #[derive(Parser)]
 struct Cli {
-    #[arg(help = "Input brainfuck file")]
+    #[arg(help = "Path to Brainfuck source file.")]
     input: String,
 
-    #[arg(short, long, help = "Output assembly file")]
+    #[arg(
+        short,
+        long,
+        help = "Optional. Specify the output assembly file name. Defaults to '<INPUT>.asm'."
+    )]
     output: Option<String>,
 }
 

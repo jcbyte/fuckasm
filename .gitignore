@@ -1,8 +1,5 @@
 /target
 
-# Ignore all compiled binaries in the root folder
-/main
-
 # Ignore other common build artifacts
 *.o
 *.out

@@ -237,6 +237,3 @@ pub fn compile(input_file: &Path, output_file: &Path) -> Result<(), String> {
 
     return Ok(());
 }
-
-// todo:
-// - readme

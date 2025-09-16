@@ -1,4 +1,9 @@
+use std::fmt::format;
 use std::fs;
+use std::fs::File;
+use std::io::Write;
+
+static BOILERPLATE_ASM: &str = include_str!("main.asm");
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum Symbol {
@@ -145,7 +150,7 @@ fn main() {
 
     let symbols: Vec<ReducedSymbolCount> = code
         .chars()
-        .filter_map(Symbol::get)
+        .filter_map(Symbol::get) // ignores all non BF syntax
         .map(SymbolCount::new)
         .map(|s| s.into())
         .collect();
@@ -155,5 +160,34 @@ fn main() {
         .map(|s| s.into())
         .collect();
 
-    dbg!(folded_symbols);
+    let (header, footer) = BOILERPLATE_ASM
+        .split_once("<GENERATED_CODE_HERE>")
+        .expect("Boilerplate code invalid");
+
+    let mut file = File::create("main.asm").expect("Failed to create file");
+    write!(file, "{}", header).expect("Failed to write to file");
+
+    // ; loop_start_0:           ; [
+    // ;   cmp byte [d + rbx], 0
+    // ;   je loop_end_0
+    // ;   ; loop body
+    // ;   jmp loop_start_0
+    // ; loop_end_0:             ; ]
+
+    for sym in &folded_symbols {
+        let content = match sym.symbol {
+            Symbol::Right => format!("add rbx, {}", sym.count),
+            Symbol::Left => format!("sub rbx, {}", sym.count),
+            Symbol::Incr => format!("add byte [d + rbx], {}", sym.count),
+            Symbol::Decr => format!("sub byte [d + rbx], {}", sym.count),
+            Symbol::Out => "call read".into(),
+            Symbol::In => "call print".into(),
+            Symbol::StartLoop => "".into(),
+            Symbol::EndLoop => "".into(),
+        };
+
+        writeln!(file, "{}", content).expect("Failed to write to file");
+    }
+
+    write!(file, "{}", footer).expect("Failed to write to file");
 }

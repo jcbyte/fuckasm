@@ -28,5 +28,11 @@ fn main() {
     let input_path = Path::new(&cli.input);
     let output_path = Path::new(&output_file);
 
-    compiler::compile(input_path, output_path)
+    match compiler::compile(input_path, output_path) {
+        Ok(()) => println!("Compilation successful!"),
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        }
+    }
 }

@@ -1,4 +1,3 @@
-use std::fmt::format;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
@@ -164,19 +163,23 @@ fn estimate_tape_size(symbols: &Vec<SymbolCount>) -> isize {
     return max_ptr + 1;
 }
 
-fn write_asm(file_path: &Path, tape_length: isize, symbols: &Vec<SymbolCount>) {
-    let mut file = File::create(file_path).expect("Failed to create file");
+fn write_asm(
+    file_path: &Path,
+    tape_length: isize,
+    symbols: &Vec<SymbolCount>,
+) -> Result<(), String> {
+    let mut file = File::create(file_path).map_err(|_e| "Failed to create file")?;
 
     let (header, footer) = BOILERPLATE_ASM
         .split_once("<GENERATED_CODE_HERE>")
-        .expect("Boilerplate code invalid");
+        .ok_or("Boilerplate code invalid")?;
 
     write!(
         file,
         "{}",
         header.replace("<CALCULATED_TAPE_LENGTH>", &tape_length.to_string())
     )
-    .expect("Failed to write to file");
+    .map_err(|_e| "Failed to write to file")?;
 
     let mut loop_counter = 0;
     let mut loop_stack: Vec<i32> = Vec::new();
@@ -201,19 +204,21 @@ fn write_asm(file_path: &Path, tape_length: isize, symbols: &Vec<SymbolCount>) {
                 content
             }
             Symbol::EndLoop => {
-                let stack_counter = loop_stack.pop().expect("Unmatched ']'");
+                let stack_counter = loop_stack.pop().ok_or("Unmatched ']'")?;
                 format!("jmp loop_start_{0}\nloop_end_{0}:", stack_counter)
             }
         };
 
-        writeln!(file, "{}", content).expect("Failed to write to file");
+        writeln!(file, "{}", content).map_err(|_e| "Failed to write to file")?;
     }
 
-    write!(file, "{}", footer).expect("Failed to write to file");
+    write!(file, "{}", footer).map_err(|_e| "Failed to write to file")?;
+
+    return Ok(());
 }
 
-pub fn compile(input_file: &Path, output_file: &Path) {
-    let code = fs::read_to_string(input_file).expect("Failed to read file");
+pub fn compile(input_file: &Path, output_file: &Path) -> Result<(), String> {
+    let code = fs::read_to_string(input_file).map_err(|_e| "Failed to read file")?;
 
     let symbols: Vec<ReducedSymbolCount> = code
         .chars()
@@ -228,9 +233,10 @@ pub fn compile(input_file: &Path, output_file: &Path) {
         .collect();
 
     let tape_length_estimate = estimate_tape_size(&folded_symbols);
-    write_asm(output_file, tape_length_estimate, &folded_symbols);
+    write_asm(output_file, tape_length_estimate, &folded_symbols)?;
+
+    return Ok(());
 }
 
 // todo:
-// - error handling
 // - readme

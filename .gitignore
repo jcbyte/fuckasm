@@ -1,0 +1,13 @@
+# Ignore all compiled binaries in the root folder
+/main
+
+# Ignore other common build artifacts
+*.o
+*.out
+*.exe
+
+# Optional: ignore editor or OS files
+.vscode/*
+!.vscode/tasks.json
+*.swp
+.DS_Store

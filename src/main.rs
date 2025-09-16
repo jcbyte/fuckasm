@@ -2,6 +2,7 @@ use std::fmt::format;
 use std::fs;
 use std::fs::File;
 use std::io::Write;
+use std::path::Path;
 
 static BOILERPLATE_ASM: &str = include_str!("main.asm");
 
@@ -163,44 +164,24 @@ fn estimate_tape_size(symbols: &Vec<SymbolCount>) -> isize {
     return max_ptr + 1;
 }
 
-fn main() {
-    let filename = "main.bf";
-
-    let code = fs::read_to_string(filename).expect("Failed to read file");
-
-    let symbols: Vec<ReducedSymbolCount> = code
-        .chars()
-        .filter_map(Symbol::get) // ignores all non BF syntax
-        .map(SymbolCount::new)
-        .map(|s| s.into())
-        .collect();
-
-    let folded_symbols: Vec<SymbolCount> = fold_symbols(symbols)
-        .into_iter()
-        .map(|s| s.into())
-        .collect();
+fn write_asm(file_path: &Path, tape_length: isize, symbols: &Vec<SymbolCount>) {
+    let mut file = File::create(file_path).expect("Failed to create file");
 
     let (header, footer) = BOILERPLATE_ASM
         .split_once("<GENERATED_CODE_HERE>")
         .expect("Boilerplate code invalid");
 
-    let mut file = File::create("main.asm").expect("Failed to create file");
-
-    let tape_length_estimate = estimate_tape_size(&folded_symbols);
     write!(
         file,
         "{}",
-        header.replace(
-            "<CALCULATED_TAPE_LENGTH>",
-            &tape_length_estimate.to_string()
-        )
+        header.replace("<CALCULATED_TAPE_LENGTH>", &tape_length.to_string())
     )
     .expect("Failed to write to file");
 
     let mut loop_counter = 0;
     let mut loop_stack: Vec<i32> = Vec::new();
 
-    for sym in &folded_symbols {
+    for sym in symbols {
         let content = match sym.symbol {
             Symbol::Right => format!("add rbx, {}", sym.count),
             Symbol::Left => format!("sub rbx, {}", sym.count),
@@ -229,6 +210,28 @@ fn main() {
     }
 
     write!(file, "{}", footer).expect("Failed to write to file");
+}
+
+fn main() {
+    let filename = "main.bf";
+
+    let code = fs::read_to_string(filename).expect("Failed to read file");
+
+    let symbols: Vec<ReducedSymbolCount> = code
+        .chars()
+        .filter_map(Symbol::get) // ignores all non BF syntax
+        .map(SymbolCount::new)
+        .map(|s| s.into())
+        .collect();
+
+    let folded_symbols: Vec<SymbolCount> = fold_symbols(symbols)
+        .into_iter()
+        .map(|s| s.into())
+        .collect();
+
+    let tape_length_estimate = estimate_tape_size(&folded_symbols);
+    let path: &Path = Path::new("main.asm");
+    write_asm(path, tape_length_estimate, &folded_symbols);
 }
 
 // todo:

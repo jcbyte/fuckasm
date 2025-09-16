@@ -167,12 +167,8 @@ fn main() {
     let mut file = File::create("main.asm").expect("Failed to create file");
     write!(file, "{}", header).expect("Failed to write to file");
 
-    // ; loop_start_0:           ; [
-    // ;   cmp byte [d + rbx], 0
-    // ;   je loop_end_0
-    // ;   ; loop body
-    // ;   jmp loop_start_0
-    // ; loop_end_0:             ; ]
+    let mut loop_counter = 0;
+    let mut loop_stack: Vec<i32> = Vec::new();
 
     for sym in &folded_symbols {
         let content = match sym.symbol {
@@ -180,10 +176,23 @@ fn main() {
             Symbol::Left => format!("sub rbx, {}", sym.count),
             Symbol::Incr => format!("add byte [d + rbx], {}", sym.count),
             Symbol::Decr => format!("sub byte [d + rbx], {}", sym.count),
-            Symbol::Out => "call read".into(),
-            Symbol::In => "call print".into(),
-            Symbol::StartLoop => "".into(),
-            Symbol::EndLoop => "".into(),
+            Symbol::Out => "call print".into(),
+            Symbol::In => "call read".into(),
+            Symbol::StartLoop => {
+                let content = format!(
+                    "loop_start_{0}:\ncmp byte [d + rbx], 0\nje loop_end_{0}",
+                    loop_counter
+                );
+
+                loop_stack.push(loop_counter);
+                loop_counter += 1;
+
+                content
+            }
+            Symbol::EndLoop => {
+                let stack_counter = loop_stack.pop().expect("Unmatched ']'");
+                format!("jmp loop_start_{0}\nloop_end_{0}:", stack_counter)
+            }
         };
 
         writeln!(file, "{}", content).expect("Failed to write to file");

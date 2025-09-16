@@ -44,15 +44,83 @@ impl Symbol {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 struct SymbolCount {
     symbol: Symbol,
-    count: usize,
+    count: isize,
 }
 
-fn collapse_symbols(symbols: Vec<SymbolCount>) -> Vec<SymbolCount> {
-    let mut collapsed: Vec<SymbolCount> = Vec::new();
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+struct ReducedSymbolCount {
+    symbol: Symbol,
+    count: isize,
+}
 
-    for sym in &symbols {
+impl SymbolCount {
+    fn new(sym: Symbol) -> Self {
+        SymbolCount {
+            symbol: sym,
+            count: 1,
+        }
+    }
+
+    fn reduce(self) -> ReducedSymbolCount {
+        return match self.symbol {
+            Symbol::Left => ReducedSymbolCount {
+                symbol: Symbol::Right,
+                count: -self.count,
+            },
+            Symbol::Decr => ReducedSymbolCount {
+                symbol: Symbol::Incr,
+                count: -self.count,
+            },
+            _ => ReducedSymbolCount {
+                symbol: self.symbol,
+                count: self.count,
+            },
+        };
+    }
+}
+
+impl ReducedSymbolCount {
+    fn normalise(self) -> SymbolCount {
+        if self.count >= 0 {
+            return SymbolCount {
+                symbol: self.symbol,
+                count: self.count,
+            };
+        }
+
+        let flipped_symbol = match self.symbol {
+            Symbol::Left => Symbol::Right,
+            Symbol::Right => Symbol::Left,
+            Symbol::Incr => Symbol::Decr,
+            Symbol::Decr => Symbol::Incr,
+            other => other,
+        };
+
+        return SymbolCount {
+            symbol: flipped_symbol,
+            count: self.count.abs(),
+        };
+    }
+}
+
+impl From<SymbolCount> for ReducedSymbolCount {
+    fn from(sym: SymbolCount) -> Self {
+        return sym.reduce();
+    }
+}
+
+impl From<ReducedSymbolCount> for SymbolCount {
+    fn from(sym: ReducedSymbolCount) -> Self {
+        return sym.normalise();
+    }
+}
+
+fn fold_symbols(reduced_symbols: Vec<ReducedSymbolCount>) -> Vec<ReducedSymbolCount> {
+    let mut collapsed: Vec<ReducedSymbolCount> = Vec::new();
+
+    for sym in &reduced_symbols {
         match sym.symbol {
-            Symbol::Right | Symbol::Left | Symbol::Incr | Symbol::Decr => {
+            Symbol::Right | Symbol::Incr => {
                 if let Some(last) = collapsed.last_mut() {
                     // Collapse into previous if same type
                     if last.symbol == sym.symbol {
@@ -75,15 +143,17 @@ fn main() {
 
     let code = fs::read_to_string(filename).expect("Failed to read file");
 
-    let symbols: Vec<SymbolCount> = code
+    let symbols: Vec<ReducedSymbolCount> = code
         .chars()
         .filter_map(Symbol::get)
-        .map(|s| SymbolCount {
-            symbol: s,
-            count: 1,
-        })
+        .map(SymbolCount::new)
+        .map(|s| s.into())
         .collect();
 
-    let c = collapse_symbols(symbols);
-    dbg!(c);
+    let folded_symbols: Vec<SymbolCount> = fold_symbols(symbols)
+        .into_iter()
+        .map(|s| s.into())
+        .collect();
+
+    dbg!(folded_symbols);
 }

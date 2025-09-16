@@ -1,6 +1,6 @@
 # fuckasm
 
-An optimized Brainfuck to 64-bit x86-64 NASM compiler written in Rust.
+An optimised Brainfuck to 64-bit x86-64 NASM compiler written in Rust.
 
 ## Usage
 

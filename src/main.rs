@@ -143,6 +143,26 @@ fn fold_symbols(reduced_symbols: Vec<ReducedSymbolCount>) -> Vec<ReducedSymbolCo
     return collapsed;
 }
 
+fn estimate_tape_size(symbols: &Vec<SymbolCount>) -> isize {
+    let mut ptr: isize = 0;
+    let mut max_ptr = ptr;
+
+    for sym in symbols {
+        match sym.symbol {
+            Symbol::Right => {
+                ptr += sym.count;
+                max_ptr = max_ptr.max(ptr);
+            }
+            Symbol::Left => {
+                ptr -= sym.count;
+            }
+            _ => {}
+        }
+    }
+
+    return max_ptr + 1;
+}
+
 fn main() {
     let filename = "main.bf";
 
@@ -165,7 +185,17 @@ fn main() {
         .expect("Boilerplate code invalid");
 
     let mut file = File::create("main.asm").expect("Failed to create file");
-    write!(file, "{}", header).expect("Failed to write to file");
+
+    let tape_length_estimate = estimate_tape_size(&folded_symbols);
+    write!(
+        file,
+        "{}",
+        header.replace(
+            "<CALCULATED_TAPE_LENGTH>",
+            &tape_length_estimate.to_string()
+        )
+    )
+    .expect("Failed to write to file");
 
     let mut loop_counter = 0;
     let mut loop_stack: Vec<i32> = Vec::new();
@@ -200,3 +230,8 @@ fn main() {
 
     write!(file, "{}", footer).expect("Failed to write to file");
 }
+
+// todo:
+// - cli
+// - error handling
+// - readme

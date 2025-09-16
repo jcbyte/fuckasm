@@ -1,8 +1,8 @@
 [BITS 64]
 
 section .data
-    msg: db 0 ; Printing buffer
-    d: db 0, 0, 0, 0, 0, 0, 0, 0 ; data 
+    msg: db 0 ; printing buffer
+    d: times <CALCULATED_TAPE_LENGTH> db 0 ; data 
 
 section .text
     global _start

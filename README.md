@@ -9,6 +9,10 @@ An optimized Brainfuck to 64-bit x86-64 NASM compiler written in Rust.
 - `<INPUT>`: Path to Brainfuck source file.
 - `OUTPUT`: Optional. Specify the output assembly file name. Defaults to '<INPUT>.asm'.
 
+### Demos
+
+Some example Brainfuck programs are available in the `/demos` directory.
+
 ## Assembling
 
 After generating the assembly file, you can assemble and run it on Linux:

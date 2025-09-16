@@ -1,3 +1,5 @@
+/target
+
 # Ignore all compiled binaries in the root folder
 /main
 
@@ -8,6 +10,5 @@
 
 # Optional: ignore editor or OS files
 .vscode/*
-!.vscode/tasks.json
 *.swp
 .DS_Store
